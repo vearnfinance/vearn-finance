@@ -27,5 +27,9 @@
   "Snackbar.Warning": "Warning",
   "Snackbar.Info": "Info",
   "Snackbar.Succecss": "Success",
-  "Snackbar.Hash": "Hash"
+  "Snackbar.Hash": "Hash",
+
+  "ConvertBTC.Intro": "Deposit BTC. Simple.",
+  "ConvertBTC.Deposit": "Deposit",
+  "ConvertBTC.Withdraw": "Withdraw"
 }

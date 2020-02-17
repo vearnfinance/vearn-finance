@@ -15,7 +15,6 @@ import InvestSimple from './components/investSimple';
 import Manage from './components/manage';
 import Performance from './components/performance';
 
-
 class App extends Component {
 
   render() {
