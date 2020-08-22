@@ -41,7 +41,7 @@ const styles = theme => ({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    maxWidth: '1200px',
+    maxWidth: '900px',
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center'
@@ -51,7 +51,7 @@ const styles = theme => ({
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     minWidth: '100%',
     marginTop: '40px',
     [theme.breakpoints.up('md')]: {
