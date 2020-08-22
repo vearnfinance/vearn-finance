@@ -9,48 +9,21 @@ import {
 import CloseIcon from '@material-ui/icons/Close';
 import { withNamespaces } from 'react-i18next';
 
-import Web3 from 'web3'
 import {
   Web3ReactProvider,
   useWeb3React,
-  UnsupportedChainIdError
 } from "@web3-react/core";
-import {
-  NoEthereumProviderError,
-  UserRejectedRequestError as UserRejectedRequestErrorInjected
-} from "@web3-react/injected-connector";
-import {
-  URI_AVAILABLE,
-  UserRejectedRequestError as UserRejectedRequestErrorWalletConnect
-} from "@web3-react/walletconnect-connector";
-import { UserRejectedRequestError as UserRejectedRequestErrorFrame } from "@web3-react/frame-connector";
 import { Web3Provider } from "@ethersproject/providers";
-import { formatEther } from "@ethersproject/units";
-import { useEagerConnect, useInactiveListener } from "./hooks";
-
-import {
-  walletconnect,
-  fortmatic,
-  portis,
-  torus,
-} from "../../stores/connectors";
 
 import {
   ERROR,
-  // CONNECT_METAMASK,
-  // METAMASK_CONNECTED,
-  // CONNECT_LEDGER,
-  // LEDGER_CONNECTED,
   CONNECTION_DISCONNECTED,
   CONNECTION_CONNECTED
 } from '../../constants'
 
 import Store from "../../stores";
-const dispatcher = Store.dispatcher
 const emitter = Store.emitter
 const store = Store.store
-
-
 
 const styles = theme => ({
   root: {
@@ -77,16 +50,6 @@ const styles = theme => ({
   unlockCard: {
     padding: '24px'
   },
-  metamaskIcon: {
-    backgroundImage: 'url('+require('../../assets/icn-metamask.svg')+')',
-    width: '30px',
-    height: '30px'
-  },
-  ledgerIcon: {
-    backgroundImage: 'url('+require('../../assets/icn-ledger.svg')+')',
-    width: '30px',
-    height: '30px'
-  },
   buttonText: {
     marginLeft: '12px',
     fontWeight: '700',
@@ -95,17 +58,6 @@ const styles = theme => ({
     maxWidth: '400px',
     marginBottom: '32px',
     marginTop: '32px'
-  },
-  metamask: {
-    backgroundImage: 'url('+require('../../assets/metamask.svg')+')',
-    width: '200px',
-    height: '200px'
-  },
-  ledger: {
-    backgroundImage: 'url('+require('../../assets/icn-ledger.svg')+')',
-    backgroundSize: '100%',
-    width: '200px',
-    height: '200px'
   },
   actionButton: {
     padding: '12px',
@@ -206,7 +158,6 @@ class Unlock extends Component {
 
   render() {
     const { classes, closeModal, t } = this.props;
-    const { metamaskLoading, ledgerLoading } = this.state;
 
     return (
       <div className={ classes.root }>
@@ -219,23 +170,6 @@ class Unlock extends Component {
       </div>
     )
   };
-}
-
-function getErrorMessage(error) {
-  if (error instanceof NoEthereumProviderError) {
-    return "No Ethereum browser extension detected, install MetaMask on desktop or visit from a dApp browser on mobile.";
-  } else if (error instanceof UnsupportedChainIdError) {
-    return "You're connected to an unsupported network.";
-  } else if (
-    error instanceof UserRejectedRequestErrorInjected ||
-    error instanceof UserRejectedRequestErrorWalletConnect ||
-    error instanceof UserRejectedRequestErrorFrame
-  ) {
-    return "Please authorize this website to access your Ethereum account.";
-  } else {
-    console.error(error);
-    return "An unknown error occurred. Check the console for more details.";
-  }
 }
 
 function getLibrary(provider) {
@@ -273,7 +207,6 @@ function MyComponent(props) {
   const {
     connector,
     library,
-    chainId,
     account,
     activate,
     deactivate,
@@ -296,7 +229,7 @@ function MyComponent(props) {
       store.setStore({ account: { address: account }, web3context: context })
       emitter.emit(CONNECTION_CONNECTED)
     }
-  }, [account, active, closeModal]);
+  }, [account, active, closeModal, context, library]);
 
   // React.useEffect(() => {
   //   if (storeContext && storeContext.active && !active) {
@@ -306,10 +239,10 @@ function MyComponent(props) {
   // }, [active, storeContext]);
 
   // handle logic to eagerly connect to the injected ethereum provider, if it exists and has granted access already
-  const triedEager = useEagerConnect();
+  // const triedEager = useEagerConnect();
 
   // handle logic to connect in reaction to certain events on the injected ethereum provider, if it exists
-  useInactiveListener(!triedEager || !!activatingConnector);
+  // useInactiveListener(!triedEager || !!activatingConnector);
   const width = window.innerWidth
 
   return (
@@ -319,48 +252,48 @@ function MyComponent(props) {
         const activating = currentConnector === activatingConnector;
         const connected = (currentConnector === connector||currentConnector === localConnector);
         const disabled =
-          !triedEager || !!activatingConnector || !!error;
+           !!activatingConnector || !!error;
 
         var url;
         var display = name;
-        if (name == 'MetaMask') {
+        if (name === 'MetaMask') {
           url = require('../../assets/icn-metamask.svg')
-        } else if (name == 'WalletConnect') {
+        } else if (name === 'WalletConnect') {
           url = require('../../assets/walletConnectIcon.svg')
-        } else if (name == 'TrustWallet') {
+        } else if (name === 'TrustWallet') {
           url = require('../../assets/trustWallet.png')
-        } else if (name == 'Portis') {
+        } else if (name === 'Portis') {
           url = require('../../assets/portisIcon.png')
-        } else if (name == 'Fortmatic') {
+        } else if (name === 'Fortmatic') {
           url = require('../../assets/fortmaticIcon.png')
-        } else if (name == 'Ledger') {
+        } else if (name === 'Ledger') {
           url = require('../../assets/icn-ledger.svg')
-        } else if (name == 'Squarelink') {
+        } else if (name === 'Squarelink') {
           url = require('../../assets/squarelink.png')
-        } else if (name == 'Trezor') {
+        } else if (name === 'Trezor') {
           url = require('../../assets/trezor.png')
-        } else if (name == 'Torus') {
+        } else if (name === 'Torus') {
           url = require('../../assets/torus.jpg')
-        } else if (name == 'Authereum') {
+        } else if (name === 'Authereum') {
           url = require('../../assets/icn-aethereum.svg')
-        } else if (name == 'WalletLink') {
+        } else if (name === 'WalletLink') {
           display = 'Coinbase Wallet'
           url = require('../../assets/coinbaseWalletIcon.svg')
-        } else if (name == 'Frame') {
+        } else if (name === 'Frame') {
           return ''
         }
 
         return (
-          <div style={{ padding: '12px 0px', display: 'flex', justifyContent: 'space-between'  }}>
+          <div key={name} style={{ padding: '12px 0px', display: 'flex', justifyContent: 'space-between'  }}>
             <Button style={ {
                 padding: '16px',
                 backgroundColor: 'white',
                 borderRadius: '1rem',
-
                 border: '1px solid #E1E1E1',
                 fontWeight: 500,
                 display: 'flex',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                minWidth: '250px'
               } }
               variant='outlined'
               color='primary'
@@ -386,7 +319,7 @@ function MyComponent(props) {
                   width: '30px',
                   height: '30px'
                 }
-              } src={url}/> }
+              } src={url} alt=""/> }
               { activating && <CircularProgress size={ 15 } style={{marginRight: '10px'}} /> }
               { (!activating && connected) && <div style={{ background: '#4caf50', borderRadius: '10px', width: '10px', height: '10px', marginRight: '10px' }}></div> }
             </Button>
@@ -400,7 +333,8 @@ function MyComponent(props) {
             backgroundColor: 'white',
             borderRadius: '20px',
             border: '1px solid #E1E1E1',
-            fontWeight: 500
+            fontWeight: 500,
+            minWidth: '250px'
           } }
           variant='outlined'
           color='primary'

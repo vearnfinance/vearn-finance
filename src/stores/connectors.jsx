@@ -13,7 +13,7 @@ import { AuthereumConnector } from "@web3-react/authereum-connector";
 
 const POLLING_INTERVAL = 12000;
 const RPC_URLS = {
-  1: "https://mainnet.infura.io/v3/bd80ce1ca1f94da48e151bb6868bb150",
+  1: "https://eth-mainnet.alchemyapi.io/v2/k2--UT_xVVXMOvAyoxJYqtKhlmyBbqnX",
   4: "https://rinkeby.infura.io/v3/bd80ce1ca1f94da48e151bb6868bb150"
 };
 
@@ -61,7 +61,7 @@ export const fortmatic = new FortmaticConnector({
 });
 
 export const portis = new PortisConnector({
-  dAppId: "211b48db-e8cc-4b68-82ad-bf781727ea9e",
+  dAppId: "5dea304b-33ed-48bd-8f00-0076a2546b60",
   networks: [1, 100]
 });
 
@@ -72,4 +72,4 @@ export const squarelink = new SquarelinkConnector({
 
 export const torus = new TorusConnector({ chainId: 1 });
 
-export const authereum = new AuthereumConnector({ chainId: 42 });
+export const authereum = new AuthereumConnector({ chainId: 1 });

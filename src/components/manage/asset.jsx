@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import { withRouter } from "react-router-dom";
 import { withStyles } from '@material-ui/core/styles';
 import {
-  Slide,
   Typography,
   TextField,
   Button
@@ -173,8 +172,6 @@ class Asset extends Component {
     this.state = {
       amount: '',
       amountError: false,
-      redeemAmount: '',
-      redeemAmountError: false,
       account: store.getStore('account'),
     }
   }
@@ -209,8 +206,6 @@ class Asset extends Component {
       account,
       amount,
       amountError,
-      redeemAmount,
-      redeemAmountError,
       loading
     } = this.state
 
@@ -283,6 +278,8 @@ class Asset extends Component {
       </div>
       <div className={classes.tradeContainer}>
         <div className={ classes.textContainer }>
+          <Typography className={ classes.text } variant={ 'h5' }>{ 'Token: ' }</Typography>
+          <Typography className={ classes.text } variant={ 'h3' }>{ parseFloat(asset.tokenBalance).toFixed(2) }</Typography>
           <Typography className={ classes.text } variant={ 'h5' }>{ 'Current: ' }</Typography>
           <Typography className={ classes.text } variant={ 'h3' }>{ this.lender(asset.current) }</Typography>
           <Typography className={ classes.text } variant={ 'h5' }>{ 'Recommend: ' }</Typography>
@@ -304,15 +301,15 @@ class Asset extends Component {
   };
 
   lender = (val) => {
-    if (val == 0) {
+    if (val === 0) {
       return 'NONE'
-    } else if (val == 1) {
+    } else if (val === 1) {
       return 'dYdX'
-    } else if (val == 2) {
+    } else if (val === 2) {
       return 'Compound'
-    } else if (val == 3) {
+    } else if (val === 3) {
       return 'Aave'
-    } else if (val == 4) {
+    } else if (val === 4) {
       return 'Fulcrum'
     }
   }
@@ -348,7 +345,6 @@ class Asset extends Component {
   onRedeem = () => {
     this.setState({ redeemAmountError: false })
 
-    const { redeemAmount } = this.state
     const { asset, startLoading  } = this.props
 
     this.setState({ loading: true })
@@ -368,7 +364,7 @@ class Asset extends Component {
     const balance = asset.balance
     let amount = balance*percent/100
 
-    if (percent == 100) {
+    if (percent === 100) {
       amount = ((asset.poolValue/100)*10)/365;
     }
 

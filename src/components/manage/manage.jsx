@@ -23,9 +23,6 @@ import {
   DONATE_RETURNED,
   REBALANCE_RETURNED,
   CONNECT_METAMASK,
-  LEDGER_CONNECTED,
-  CONNECT_METAMASK_PASSIVE,
-  METAMASK_CONNECTED,
   CONNECTION_CONNECTED,
   CONNECTION_DISCONNECTED
 } from '../../constants'
@@ -359,7 +356,7 @@ class Manage extends Component {
         <div className={ classes.investedContainer }>
           { account.address &&
             <div className={ classes.intro }>
-              <Typography variant='h2'>Management. Simplified.</Typography>
+              <Typography variant='h3'>Management. Simplified.</Typography>
               <Card className={ classes.addressContainer } onClick={this.overlayClicked}>
                 <Typography variant={ 'h5'} noWrap>{ address }</Typography>
                 <div style={{ background: '#DC6BE5', opacity: '1', borderRadius: '10px', width: '10px', height: '10px', marginRight: '3px', marginTop:'3px', marginLeft:'6px' }}></div>
@@ -368,7 +365,7 @@ class Manage extends Component {
           }
           { !account.address &&
             <div className={ classes.introCenter }>
-              <Typography variant='h2'>Management. Simplified.</Typography>
+              <Typography variant='h3'>Management. Simplified.</Typography>
             </div>
           }
           <div className={ classes.balancesContainer }>
@@ -395,8 +392,8 @@ class Manage extends Component {
         </div>
         { loading && <Loader /> }
         <div className={classes.footer}>
-          <Typography onClick={()=> window.open("https://docs.iearn.finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>about</Typography>
-          <Typography onClick={()=> window.open("https://docs.iearn.finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>docs</Typography>
+          <Typography onClick={()=> window.open("https://docs.yearn.finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>about</Typography>
+          <Typography onClick={()=> window.open("https://docs.yearn.finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>docs</Typography>
           <Typography onClick={()=> window.open("https://github.com/iearn-finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>code</Typography>
           <Typography onClick={()=> window.open("https://t.me/iearnfinance", "_blank")} className={ classes.footerText } variant={ 'h6'}>telegram</Typography>
           <Typography onClick={()=> window.open("/apr", "_blank")} className={ classes.footerText } variant={ 'h6'}>yield</Typography>

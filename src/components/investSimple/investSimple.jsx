@@ -8,17 +8,14 @@ import {
   ExpansionPanel,
   ExpansionPanelDetails,
   ExpansionPanelSummary,
-  Switch,
-  Select,
-  MenuItem,
-  FormControl
 } from '@material-ui/core';
+import ToggleButton from '@material-ui/lab/ToggleButton';
+import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { withNamespaces } from 'react-i18next';
-import i18n from '../../i18n';
 import { colors } from '../../theme'
 
-import BuiltWithModal from '../builtwith/builtwithModal.jsx'
+import InvestAllModal from './investAllModal.jsx'
 import UnlockModal from '../unlock/unlockModal.jsx'
 import Snackbar from '../snackbar'
 import Asset from './asset'
@@ -30,12 +27,8 @@ import {
   BALANCES_RETURNED,
   INVEST_RETURNED,
   REDEEM_RETURNED,
-  CONNECT_METAMASK,
-  LEDGER_CONNECTED,
-  CONNECT_METAMASK_PASSIVE,
-  METAMASK_CONNECTED,
   CONNECTION_CONNECTED,
-  CONNECTION_DISCONNECTED
+  CONNECTION_DISCONNECTED,
 } from '../../constants'
 
 import Store from "../../stores";
@@ -59,10 +52,10 @@ const styles = theme => ({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '12px',
     minWidth: '100%',
+    marginTop: '40px',
     [theme.breakpoints.up('md')]: {
-      minWidth: '800px',
+      minWidth: '900px',
     }
   },
   balancesContainer: {
@@ -90,6 +83,10 @@ const styles = theme => ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingBottom: '32px',
+    [theme.breakpoints.down('sm')]: {
+      flexDirection: 'column-reverse',
+    }
   },
   introCenter: {
     maxWidth: '500px',
@@ -106,7 +103,6 @@ const styles = theme => ({
     },
     padding: '12px',
     backgroundColor: "#2F80ED",
-    borderRadius: '1rem',
     border: '1px solid #E1E1E1',
     fontWeight: 500,
     [theme.breakpoints.up('md')]: {
@@ -155,30 +151,6 @@ const styles = theme => ({
       minWidth: 'auto',
     }
   },
-  footer: {
-    padding: '24px',
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
-    width: '100%',
-    alignItems: 'center',
-    [theme.breakpoints.up('sm')]: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '100%',
-      alignItems: 'center',
-    }
-  },
-  footerLinks: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: '350px'
-  },
-  footerText: {
-    cursor: 'pointer'
-  },
   buttonText: {
     fontWeight: '700',
     color: 'white',
@@ -211,19 +183,26 @@ const styles = theme => ({
   addressContainer: {
     display: 'flex',
     justifyContent: 'space-between',
-    maxWidth: '100px',
     overflow: 'hidden',
+    flex: 1,
     whiteSpace: 'nowrap',
     fontSize: '0.83rem',
     textOverflow:'ellipsis',
     cursor: 'pointer',
-    padding: '10px',
-    borderRadius: '0.75rem',
-    height: 'max-content',
+    padding: '28px 30px',
+    borderRadius: '50px',
+    border: '1px solid '+colors.borderBlue,
+    alignItems: 'center',
+    maxWidth: 'calc(100vw - 24px)',
+    width: '100%',
     [theme.breakpoints.up('md')]: {
-      maxWidth: '130px',
-      width: '100%'
+      width: '100%',
+      maxWidth: 'auto'
     }
+  },
+  between: {
+    width: '40px',
+    height: '40px'
   },
   expansionPanel: {
     maxWidth: 'calc(100vw - 24px)',
@@ -234,20 +213,34 @@ const styles = theme => ({
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
-  languageContainer: {
-    paddingLeft: '12px',
-    display: 'none'
-  },
-  selectInput: {
-    fontSize: '14px',
-    color: colors.pink
-  },
   tableHeadContainer: {
     width: '100%',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center'
-  }
+  },
+  investAllContainer: {
+    paddingTop: '24px',
+    display: 'flex',
+    justifyContent: 'flex-end',
+    width: '100%'
+  },
+  disaclaimer: {
+    padding: '12px',
+    border: '1px solid rgb(174, 174, 174)',
+    borderRadius: '0.75rem',
+    marginBottom: '24px',
+  },
+  walletAddress: {
+    padding: '0px 12px'
+  },
+  walletTitle: {
+    flex: 1,
+    color: colors.darkGray
+  },
+  grey: {
+    color: colors.darkGray
+  },
 });
 
 class InvestSimple extends Component {
@@ -255,21 +248,23 @@ class InvestSimple extends Component {
   constructor(props) {
     super()
 
+    const account = store.getStore('account')
     this.state = {
       assets: store.getStore('assets'),
-      account: store.getStore('account'),
-      languages: store.getStore('languages'),
-      language: 'en',
+      account: account,
       modalOpen: false,
-      modalBuiltWithOpen: false,
+      modalInvestAllOpen: false,
       snackbarType: null,
       snackbarMessage: null,
-      hideV1: true
+      hideV1: true,
+      value: 1,
+    }
+
+    if(account && account.address) {
+      dispatcher.dispatch({ type: GET_BALANCES, content: {} })
     }
   }
   componentWillMount() {
-    // emitter.on(METAMASK_CONNECTED, this.metamaskConnected);
-    // emitter.on(LEDGER_CONNECTED, this.ledgerConnected);
     emitter.on(INVEST_RETURNED, this.investReturned);
     emitter.on(REDEEM_RETURNED, this.redeemReturned);
     emitter.on(ERROR, this.errorReturned);
@@ -280,14 +275,11 @@ class InvestSimple extends Component {
   }
 
   componentWillUnmount() {
-    // emitter.removeListener(METAMASK_CONNECTED, this.metamaskConnected);
-    // emitter.removeListener(LEDGER_CONNECTED, this.ledgerConnected);
     emitter.removeListener(INVEST_RETURNED, this.investReturned);
     emitter.removeListener(REDEEM_RETURNED, this.redeemReturned);
     emitter.removeListener(ERROR, this.errorReturned);
     emitter.removeListener(CONNECTION_CONNECTED, this.connectionConnected);
     emitter.removeListener(CONNECTION_DISCONNECTED, this.connectionDisconnected);
-
     emitter.removeListener(BALANCES_RETURNED, this.balancesReturned);
   };
 
@@ -297,17 +289,18 @@ class InvestSimple extends Component {
 
   balancesReturned = (balances) => {
     this.setState({ assets: store.getStore('assets') })
-    setTimeout(this.refresh,5000);
+    setTimeout(this.refresh, 300000);
   };
 
   connectionConnected = () => {
+    const { t } = this.props
     this.setState({ account: store.getStore('account') })
 
     dispatcher.dispatch({ type: GET_BALANCES, content: {} })
 
     const that = this
     setTimeout(() => {
-      const snackbarObj = { snackbarMessage: 'Wallet succesfully connected.', snackbarType: 'Info' }
+      const snackbarObj = { snackbarMessage: t("Unlock.WalletConnected"), snackbarType: 'Info' }
       that.setState(snackbarObj)
     })
   };
@@ -315,28 +308,6 @@ class InvestSimple extends Component {
   connectionDisconnected = () => {
     this.setState({ account: store.getStore('account') })
   }
-
-  metamaskConnected = () => {
-    this.setState({ account: store.getStore('account') })
-
-    dispatcher.dispatch({ type: GET_BALANCES, content: {} })
-
-    const that = this
-    setTimeout(() => {
-      const snackbarObj = { snackbarMessage: 'Metamask wallet succesfully connected.', snackbarType: 'Info' }
-      that.setState(snackbarObj)
-    })
-  };
-
-  ledgerConnected = () => {
-    this.setState({ account: store.getStore('account') })
-
-    const that = this
-    setTimeout(() => {
-      const snackbarObj = { snackbarMessage: 'Ledger succesfully connected.', snackbarType: 'Info' }
-      that.setState(snackbarObj)
-    })
-  };
 
   errorReturned = (error) => {
     const snackbarObj = { snackbarMessage: null, snackbarType: null }
@@ -377,11 +348,9 @@ class InvestSimple extends Component {
       loading,
       account,
       modalOpen,
-      modalBuiltWithOpen,
+      modalInvestAllOpen,
       snackbarMessage,
-      hideV1,
-      languages,
-      language
+      value,
     } = this.state
     var address = null;
     if (account.address) {
@@ -390,81 +359,64 @@ class InvestSimple extends Component {
     return (
       <div className={ classes.root }>
         <div className={ classes.investedContainer }>
+
+          <Typography variant={'h5'} className={ classes.disaclaimer }>This project is in beta. Use at your own risk.</Typography>
+
           { account.address &&
-            <div className={ classes.intro }>
-              { account.address && <div className={ classes.versionToggle }>
-                <Switch
-                  id='hideV1'
-                  checked={ hideV1 }
-                  onChange={ this.onChange }
-                  value={ 'hideV1' } />
-                <Typography variant={ 'h6'}>{ t('InvestSimple.Show') }</Typography>
-              </div> }
-              <Typography variant='h2' className={ classes.introText }>{ t('InvestSimple.Intro') }</Typography>
-              <Card className={ classes.addressContainer } onClick={this.overlayClicked}>
-                <Typography variant={ 'h5'} noWrap>{ address }</Typography>
-                <div style={{ background: '#DC6BE5', opacity: '1', borderRadius: '10px', width: '10px', height: '10px', marginRight: '3px', marginTop:'3px', marginLeft:'6px' }}></div>
-              </Card>
+
+          <div className={ classes.intro }>
+            <ToggleButtonGroup value={value} onChange={this.handleTabChange} aria-label="version" exclusive size={ 'small' }>
+              <ToggleButton value={0} aria-label="v1">
+                <Typography variant={ 'h4' }>v1</Typography>
+              </ToggleButton>
+              <ToggleButton value={1} aria-label="v2">
+                <Typography variant={ 'h4' }>y.curve.fi</Typography>
+              </ToggleButton>
+              <ToggleButton value={2} aria-label="v3">
+                <Typography variant={ 'h4' }>busd.curve.fi</Typography>
+              </ToggleButton>
+            </ToggleButtonGroup>
+            <div className={ classes.between }>
             </div>
+            <Card className={ classes.addressContainer } onClick={this.overlayClicked}>
+              <Typography variant={ 'h3'} className={ classes.walletTitle } noWrap>Wallet</Typography>
+              <Typography variant={ 'h4'} className={ classes.walletAddress } noWrap>{ address }</Typography>
+              <div style={{ background: '#DC6BE5', opacity: '1', borderRadius: '10px', width: '10px', height: '10px', marginRight: '3px', marginTop:'3px', marginLeft:'6px' }}></div>
+            </Card>
+          </div>
           }
           { !account.address &&
-            <div className={ classes.introCenter }>
-              <Typography variant='h2'>{ t('InvestSimple.Intro') }</Typography>
-            </div>
-          }
-          <div className={ classes.balancesContainer }>
-            { false && <div className={ classes.overlay } onClick={ this.overlayClicked }>
-              <Typography variant='h1' >{ t('InvestSimple.Connect') }</Typography>
-            </div>}
+          <div className={ classes.introCenter }>
+            <Typography variant='h3'>{ t('InvestSimple.Intro') }</Typography>
           </div>
-
-          {!account.address &&
-            <div className={ classes.connectContainer }>
-              <Button
-                className={ classes.actionButton }
-                variant="outlined"
-                color="primary"
-                disabled={ loading }
-                onClick={ this.overlayClicked }
-                >
-                <Typography className={ classes.buttonText } variant={ 'h5'}>{ t('InvestSimple.Connect') }</Typography>
-              </Button>
-            </div>
           }
-          { account.address && this.renderAssetBlocks() }
+          {!account.address &&
+          <div className={ classes.connectContainer }>
+            <Button
+              className={ classes.actionButton }
+              variant="outlined"
+              color="primary"
+              disabled={ loading }
+              onClick={ this.overlayClicked }
+            >
+              <Typography className={ classes.buttonText } variant={ 'h5'}>{ t('InvestSimple.Connect') }</Typography>
+            </Button>
+          </div>
+          }
+          { account.address && value === 0 && this.renderAssetBlocksv1() }
+          { account.address && value === 1 && this.renderAssetBlocksv2() }
+          { account.address && value === 2 && this.renderAssetBlocksv3() }
         </div>
         { loading && <Loader /> }
-        <div className={classes.footer}>
-          <div className={classes.footerLinks}>
-            <Typography onClick={()=> window.open("https://docs.iearn.finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>{ t('InvestSimple.About') }</Typography>
-            <Typography onClick={()=> window.open("https://docs.iearn.finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>{ t('InvestSimple.Docs') }</Typography>
-            <Typography onClick={()=> window.open("https://github.com/iearn-finance", "_blank")} className={ classes.footerText } variant={ 'h6'}>{ t('InvestSimple.Code') }</Typography>
-            <Typography onClick={()=> window.open("https://t.me/iearnfinance", "_blank")} className={ classes.footerText } variant={ 'h6'}>{ t('InvestSimple.Telegram') }</Typography>
-            <Typography onClick={()=> window.open("/apr", "_blank")} className={ classes.footerText } variant={ 'h6'}>{ t('InvestSimple.Yield') }</Typography>
-            <Typography onClick={ this.builtWithOverlayClicked } className={ classes.footerText } variant={ 'h6'}>{ t('InvestSimple.BuiltWith') }</Typography>
-          </div>
-          <div className={ classes.languageContainer }>
-            <FormControl variant="outlined">
-              <Select
-                id="language"
-                value={ language }
-                onChange={ this.handleLanguageChange }
-                inputProps={{ className: classes.selectInput }}
-                color="primary"
-                fullWidth
-              >
-                { languages.map((language) => {
-                  return <MenuItem value={language.code}>{language.language}</MenuItem>
-                })}
-              </Select>
-            </FormControl>
-          </div>
-        </div>
         { modalOpen && this.renderModal() }
-        { modalBuiltWithOpen && this.renderBuiltWithModal() }
+        { modalInvestAllOpen && this.renderInvestAllModal() }
         { snackbarMessage && this.renderSnackbar() }
       </div>
     )
+  };
+
+  handleTabChange = (event, newValue) => {
+    this.setState({value:newValue})
   };
 
   onChange = (event) => {
@@ -473,15 +425,7 @@ class InvestSimple extends Component {
     this.setState(val)
   };
 
-  handleLanguageChange = (event) => {
-    let val = []
-    val.language = event.target.value
-    this.setState(val)
-
-    i18n.changeLanguage(event.target.value)
-  }
-
-  renderAssetBlocks = () => {
+  renderAssetBlocksv1 = () => {
     const { assets, expanded, hideV1 } = this.state
     const { classes, t } = this.props
     const width = window.innerWidth
@@ -489,7 +433,9 @@ class InvestSimple extends Component {
     return assets.filter((asset) => {
       return (hideV1 === true || asset.version !== 1)
     }).filter((asset) => {
-      return asset.version == 2 || (asset.version == 1 && (asset.investedBalance).toFixed(4) > 0)
+      return (asset.version === 1 && asset.investedBalance && (asset.investedBalance).toFixed(4) > 0)
+    }).filter((asset) => {
+      return !(asset.symbol === "iDAI")
     }).map((asset) => {
       return (
         <ExpansionPanel className={ classes.expansionPanel } square key={ asset.id+"_expand" } expanded={ expanded === asset.id} onChange={ () => { this.handleChange(asset.id) } }>
@@ -510,15 +456,150 @@ class InvestSimple extends Component {
                 </div>
                 <div>
                   <Typography variant={ 'h3' }>{ asset.name }</Typography>
-                  <Typography variant={ 'h5' }>{ asset.version == 1?asset.description+' - v'+asset.version+'':asset.description }</Typography>
+                  <Typography variant={ 'h5' } className={ classes.grey }>{ asset.description }</Typography>
                 </div>
               </div>
               <div className={classes.heading}>
-                <Typography variant={ 'h3' }>{ (asset.maxApr*100).toFixed(4) + ' %' }</Typography>
+                <Typography variant={ 'h3' }>
+                  {
+                    asset.maxApr
+                      ? (asset.maxApr * 100).toFixed(4) + ' %'
+                      : 'N/A'
+                  }
+                </Typography>
                 <Typography variant={ 'h5' }>{ t('InvestSimple.InterestRate') }</Typography>
               </div>
               <div className={classes.heading}>
-                <Typography variant={ 'h3' }>{(asset.balance).toFixed(4)+' '+( asset.tokenSymbol ? asset.tokenSymbol : asset.symbol )}</Typography>
+                <Typography variant={'h3'}>
+                  {
+                    asset.balance
+                      ? (asset.balance).toFixed(4) + ' ' + (asset.tokenSymbol ? asset.tokenSymbol : asset.symbol)
+                      : 'N/A'
+                  }
+                </Typography>
+                <Typography variant={ 'h5' }>{ t('InvestSimple.AvailableBalance') }</Typography>
+              </div>
+            </div>
+          </ExpansionPanelSummary>
+          <ExpansionPanelDetails>
+            <Asset asset={ asset } startLoading={ this.startLoading } />
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
+      )
+    })
+  }
+
+  renderAssetBlocksv2 = () => {
+    const { assets, expanded } = this.state
+    const { classes, t } = this.props
+    const width = window.innerWidth
+    return assets.filter((asset) => {
+      return (asset.version === 2)
+    }).filter((asset) => {
+      return !(asset.symbol === "iDAI")
+    }).map((asset) => {
+      return (
+        <ExpansionPanel className={ classes.expansionPanel } square key={ asset.id+"_expand" } expanded={ expanded === asset.id} onChange={ () => { this.handleChange(asset.id) } }>
+          <ExpansionPanelSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel1bh-content"
+            id="panel1bh-header"
+          >
+            <div className={ classes.assetSummary }>
+              <div className={classes.headingName}>
+                <div className={ classes.assetIcon }>
+                  <img
+                    alt=""
+                    src={ require('../../assets/'+asset.symbol+'-logo.png') }
+                    height={ width > 600 ? '40px' : '30px'}
+                    style={asset.disabled?{filter:'grayscale(100%)'}:{}}
+                  />
+                </div>
+                <div>
+                  <Typography variant={ 'h3' }>{ asset.name }</Typography>
+                  <Typography variant={ 'h5' } className={ classes.grey }>{ asset.description }</Typography>
+                </div>
+              </div>
+              <div className={classes.heading}>
+                <Typography variant={ 'h3' }>
+                  {
+                    asset.maxApr
+                      ? (asset.maxApr * 100).toFixed(4) + ' %'
+                      : 'N/A'
+                  }
+                </Typography>
+                <Typography variant={ 'h5' } className={ classes.grey }>{ t('InvestSimple.InterestRate') }</Typography>
+              </div>
+              <div className={classes.heading}>
+                <Typography variant={ 'h3' }>
+                  {
+                    asset.balance
+                      ? (asset.balance).toFixed(4) + ' ' + (asset.tokenSymbol ? asset.tokenSymbol : asset.symbol)
+                      : 'N/A'
+                  }
+                </Typography>
+                <Typography variant={ 'h5' } className={ classes.grey }>{ t('InvestSimple.AvailableBalance') }</Typography>
+              </div>
+            </div>
+          </ExpansionPanelSummary>
+          <ExpansionPanelDetails>
+            <Asset asset={ asset } startLoading={ this.startLoading } />
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
+      )
+    })
+  }
+
+  renderAssetBlocksv3 = () => {
+    const { assets, expanded } = this.state
+    const { classes, t } = this.props
+    const width = window.innerWidth
+
+    return assets.filter((asset) => {
+      return (asset.version === 3)
+    }).filter((asset) => {
+      return !(asset.symbol === "iDAI")
+    }).map((asset) => {
+      return (
+        <ExpansionPanel className={ classes.expansionPanel } square key={ asset.id+"_expand" } expanded={ expanded === asset.id} onChange={ () => { this.handleChange(asset.id) } }>
+          <ExpansionPanelSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel1bh-content"
+            id="panel1bh-header"
+          >
+            <div className={ classes.assetSummary }>
+              <div className={classes.headingName}>
+                <div className={ classes.assetIcon }>
+                  <img
+                    alt=""
+                    src={ require('../../assets/'+asset.symbol+'-logo.png') }
+                    height={ width > 600 ? '40px' : '30px'}
+                    style={asset.disabled?{filter:'grayscale(100%)'}:{}}
+                  />
+                </div>
+                <div>
+                  <Typography variant={ 'h3' }>{ asset.name }</Typography>
+                  <Typography variant={ 'h5' } className={ classes.grey }>{ asset.description }</Typography>
+                </div>
+              </div>
+              <div className={classes.heading}>
+                <Typography variant={ 'h3' }>
+                  {
+                    asset.maxApr
+                      ? (asset.maxApr * 100).toFixed(4) + ' %'
+                      : 'N/A'
+                  }
+                </Typography>
+                <Typography variant={ 'h5' }>{ t('InvestSimple.InterestRate') }</Typography>
+              </div>
+              <div className={classes.heading}>
+                <Typography variant={ 'h3' }>
+                  {
+                    asset.balance
+                      ? (asset.balance).toFixed(4) + ' ' + (asset.tokenSymbol ? asset.tokenSymbol : asset.symbol)
+                      : 'N/A'
+                  }
+                </Typography>
                 <Typography variant={ 'h5' }>{ t('InvestSimple.AvailableBalance') }</Typography>
               </div>
             </div>
@@ -547,20 +628,15 @@ class InvestSimple extends Component {
     return <Snackbar type={ snackbarType } message={ snackbarMessage } open={true}/>
   };
 
-  unlockMetamask = () => {
-    this.setState({ metamaskLoading: true })
-    dispatcher.dispatch({ type: CONNECT_METAMASK, content: {} })
-  }
-
   renderModal = () => {
     return (
       <UnlockModal closeModal={ this.closeModal } modalOpen={ this.state.modalOpen } />
     )
   }
 
-  renderBuiltWithModal = () => {
+  renderInvestAllModal = () => {
     return (
-      <BuiltWithModal closeModal={ this.closeBuiltWithModal } modalOpen={ this.state.modalBuiltWithOpen } />
+      <InvestAllModal closeModal={ this.closeInvestAllModal } modalOpen={ this.state.modalInvestAllOpen } assets={ this.state.assets } />
     )
   }
 
@@ -572,12 +648,12 @@ class InvestSimple extends Component {
     this.setState({ modalOpen: false })
   }
 
-  builtWithOverlayClicked = () => {
-    this.setState({ modalBuiltWithOpen: true })
+  investAllClicked = () => {
+    this.setState({ modalInvestAllOpen: true })
   }
 
-  closeBuiltWithModal = () => {
-    this.setState({ modalBuiltWithOpen: false })
+  closeInvestAllModal = () => {
+    this.setState({ modalInvestAllOpen: false })
   }
 }
 
