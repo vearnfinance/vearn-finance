@@ -7,7 +7,7 @@ import {
   Button
 } from '@material-ui/core';
 import { withNamespaces } from 'react-i18next';
-import ConvertBTC from '../convertBTC'
+// import ConvertBTC from '../convertBTC'
 
 import {
   ERROR,
@@ -273,7 +273,7 @@ class Asset extends Component {
           <Typography className={ classes.buttonText } variant={ 'h5'} color='secondary'>{ t('Asset.Claim') }</Typography>
         </Button>
       </div>
-      { asset.symbol === 'wBTC' && <ConvertBTC />}
+      { /* asset.symbol === 'wBTC' && <ConvertBTC /> */}
     </div>)
   };
 
